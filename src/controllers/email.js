@@ -1,84 +1,70 @@
-import redis from "../db/Radis.js";
+// import Redis from "ioredis";
+import redis from "../db/Redis.js";
+import mailgun, { verifyWebhook } from "../mailgun.js";
 
-//  random domain generator
+// generate email
 
-const generatRandomDomain = () => {
-  const tdsl = ["com"];
-  const randomName = Math.random().toString(36).substring(2, 9);
-  const randomTlds = tdsl[0];
-  return `${randomName}.${randomTlds}`;
-};
-
-//   random email generater function
-
-export const randomEmail = (length = 8) => {
-  let letter = "abcdefghijklmnopqrtsuvwxyz";
-  let username = "";
-
-  for (let i = 0; i < length; i++) {
-    username = username + letter[Math.floor(Math.random() * letter.length)];
-    // username = username + letter[Math.floor(Math.random() * letter.length)];
-  }
-
-  const domain = generatRandomDomain();
-  const email = `${username}@${domain}`;
-
-  console.log("username", username);
-
-  console.log("email generating  :", email);
-  return email;
-};
-
-export const saveEmail = async (email) => {
+const generateEmail = async (req, res) => {
   try {
-    console.log("Email stored successfully in redis ");
-    await redis.set(email, "active", "EX", 1200);
+    // create emailkey
+    const domains = process.env.MAILGUN_DOMAIN;
+    const username = Math.random().toString(36).substring(2, 10);
+    const email = `${username}@${process.env.MAILGUN_DOMAIN}`;
+
+    console.log(domains);
+    console.log(email);
+
+    // store email in redis
+
+    await redis.set(email, email, "EX", 1200);
+
+    return res
+      .status(201)
+      .json({ message: "email generated and save in redis", email });
   } catch (error) {
-    console.error("Error email save in redis :", error);
+    console.error(error);
+    return res.status(500).json({ message: "error while generate email" });
   }
 };
-// costom mail
 
-export const costomEmail = async (req, res) => {
+//  handle incoming mail
+
+const hanleIncoming = async (req, res) => {
   try {
-    const { email } = req.body;
+    //  validate maligun hook
 
-    if (!email) {
-      return res.status(400).json({ messege: "Costom email required" });
+    if (!verifyWebhook(req.body)) {
+      return res.status(401).json({ error: "Invalid signature" });
     }
+    const { recipient, sender, subject, "body-plain": body } = req.body;
 
-    return res.status(200).json({
-      messege: "Costom email created successfully",
-      email,
+    //  redis existing email
+    const inbox = JSON.parse((await redis.get(recipient)) || "[]");
+
+    inbox.push({
+      sender,
+      subject,
+      body,
+      date: new Date().toISOString(),
     });
+    await redis.set(recipient, JSON.stringify(inbox));
+    res.status(200).json({ message: "Email stored successfully" });
   } catch (error) {
-    return res.status(500).json({ messege: "server error ", error });
+    console.error("Error while handing email :", error);
+    res.status(500).json({ error: "mail not processing " });
   }
 };
 
-//   check if email exist
+//  check inbox
 
-export const isEmailExist = async (email) => {
+const checkInbox = async (req, res) => {
+  const { email } = req.params;
   try {
-    const exist = await redis.get(email);
-
-    if (exist !== null) {
-      return {
-        status: "exist",
-        message: `Email ${email} exist ,please try another`,
-      };
-    } else {
-      return {
-        status: "not_exist",
-
-        message: `email ${email} is avalable`,
-      };
-    }
+    const inbox = await redis.get(email);
+    return res.status(200).json(inbox ? JSON.parse(inbox) : []);
   } catch (error) {
-    console.error("Error while checking email in redis:", error);
-    return {
-      status: "error",
-      message: "something went wrong while checking the email",
-    };
+    console.error("Error fetching inbox:", error);
+    res.status(500).json({ error: "Server error!" });
   }
 };
+export { generateEmail, hanleIncoming, checkInbox };

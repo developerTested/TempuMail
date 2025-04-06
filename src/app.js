@@ -1,6 +1,9 @@
 import Redis from "ioredis";
 import express from "express";
 import emailRouter from "./routes/emailr.js";
+
+import dotenv from "dotenv";
+dotenv.config();
 const redis = new Redis();
 
 async function testRadis() {
@@ -11,7 +14,7 @@ async function testRadis() {
 
 const app = express();
 const port = 3000;
-app.use("/api/email", emailRouter);
+app.use("/api", emailRouter);
 
 app.listen(port, () => console.log(`server running port ${port}`));
 testRadis();

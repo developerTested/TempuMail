@@ -1,16 +1,23 @@
 import express from "express";
 
 import {
-  randomEmail,
-  costomEmail,
-  //   saveEmail,
-  isEmailExist,
+  generateEmail,
+  hanleIncoming,
+  checkInbox,
 } from "../controllers/email.js";
 
 const router = express.Router();
 
-router.get("/generatemail", randomEmail);
-router.get("/checkmail-exist", isEmailExist);
-router.post("/costom-mail", costomEmail);
+//  generate email
+
+router.get("/generate", generateEmail);
+
+// handle incoming
+
+router.post("/mailgun", hanleIncoming);
+
+//  get inbox
+
+router.get("/inbox/:email", checkInbox);
 
 export default router;

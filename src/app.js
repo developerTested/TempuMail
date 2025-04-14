@@ -1,15 +1,18 @@
-import Redis from "ioredis";
-import express from "express";
-import emailRouter from "./routes/emailr.js";
-
 import dotenv from "dotenv";
 dotenv.config();
-const redis = new Redis();
+
+import express from "express";
+import emailRouter from "./routes/emailr.js";
+import redis from "./db/Redis.js";
 
 async function testRadis() {
-  await redis.set("testkey", "Hello from radis ", "EX", 120);
-  const value = await redis.get("testkey");
-  console.log("Radis value :", value);
+  try {
+    await redis.set("testkey", "Hello from unstap radis ", { ex: 120 });
+    const value = await redis.get("testkey");
+    console.log("Radis value :", value);
+  } catch (error) {
+    console.error("Upstash Test Failed:", error);
+  }
 }
 
 const app = express();

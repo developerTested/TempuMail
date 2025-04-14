@@ -1,4 +1,5 @@
 import Mailgun from "mailgun.js";
+``;
 import crypto from "crypto";
 
 const mailgun = new Mailgun({
@@ -6,7 +7,7 @@ const mailgun = new Mailgun({
   username: "api",
   domain: process.env.MAILGUN_DOMAIN,
 });
- 
+
 export const verifyWebhook = (body) => {
   try {
     const token = body.signature.token;

@@ -18,7 +18,7 @@ async function testRadis() {
 const app = express();
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ limit: "16kb", extended: true }));
-const port = 3000;
+const port = process.env.PORT || 3001;
 app.use("/api", emailRouter);
 
 app.listen(port, () => console.log(`server running port ${port}`));

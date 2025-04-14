@@ -15,11 +15,11 @@ const generateEmail = async (req, res) => {
     console.log(email);
 
     // store email in redis
+    if (!await redis.exists(email)) {
+      await redis.json.set(email, "$", [], "EX", 60);
+    }
 
-    // await redis.set(email, email, { ex: 60 });
-    // Replace: await redis.set(email, email, { ex: 60 });
-    await redis.json.set(email, "$", []);
-    await redis.expire(email, 60);
+
     return res
       .status(201)
       .json({ message: "email generated and save in redis", email });
@@ -63,12 +63,8 @@ const hanleIncoming = async (req, res) => {
       return res.status(404).json({ message: "Email not found" });
     }
     //
-    // await redis.json.arrappend(recipient, "$", JSON.parse(mailData));
-    await redis.json.arrappend(
-      recipient,
-      "$",
-      JSON.parse(JSON.stringify(mailData))
-    );
+
+    await redis.json.arrappend(recipient, "$", JSON.parse(JSON.stringify(mailData)));
 
     res.status(200).json({ message: "Email stored successfully", mailData });
   } catch (error) {

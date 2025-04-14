@@ -15,10 +15,9 @@ const generateEmail = async (req, res) => {
     console.log(email);
 
     // store email in redis
-    if (!await redis.exists(email)) {
+    if (!(await redis.exists(email))) {
       await redis.json.set(email, "$", [], "EX", 60);
     }
-
 
     return res
       .status(201)
@@ -64,7 +63,11 @@ const hanleIncoming = async (req, res) => {
     }
     //
 
-    await redis.json.arrappend(recipient, "$", JSON.parse(JSON.stringify(mailData)));
+    await redis.json.arrappend(
+      recipient,
+      "$",
+      JSON.parse(JSON.stringify(mailData))
+    );
 
     res.status(200).json({ message: "Email stored successfully", mailData });
   } catch (error) {

@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from "react";
 
-const Inbox = ({ email }) => {
+export default function Inbox() {
+
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [prevLength, setPrevLength] = useState(0);
 
   // 📩 Inbox mail fetch function
   const fetchInbox = async () => {
+
+    const email = localStorage.getItem("email");
+
+    if (!email.length) {
+      return false;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(
-        `https://tempu-mail.vercel.app/api/inbox?email=${email}`
+        `https://tempu-mail.vercel.app/api/inbox/${email}`
       );
       const result = await response.json();
 
-      // ✅ Agar naye mail aaye ho to alert dikha do
-      if (result.data.length > prevLength) {
-        alert("📩 New mail received!");
+      if (result.data) {
+        setInbox(result.data);
       }
 
-      setPrevLength(result.data.length); // update previous mail count
-      setInbox(result.data);
     } catch (error) {
       console.error("Error while fetching inbox mail", error);
     } finally {
@@ -30,14 +34,13 @@ const Inbox = ({ email }) => {
 
   // 🔁 Auto refresh inbox every 10 seconds
   useEffect(() => {
-    if (!email) return;
 
     fetchInbox(); // pehle ek baar call karo
 
     const interval = setInterval(fetchInbox, 10000); // har 10 sec me mail check
 
     return () => clearInterval(interval); // cleanup on component unmount
-  }, [email]);
+  }, []);
 
   return (
     <div className="flex justify-center items-center w-full">
@@ -77,5 +80,3 @@ const Inbox = ({ email }) => {
     </div>
   );
 };
-
-export default Inbox;

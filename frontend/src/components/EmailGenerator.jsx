@@ -1,25 +1,38 @@
 import React, { useEffect, useState, useRef } from "react";
 
-const EmailGenerator = () => {
+export default function EmailGenerator() {
   const [mail, setMail] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
-  const fetchMailDetails = async () => {
-    try {
-      setLoading(true);
+  const fetchMailDetails = async (regenrate = false) => {
 
-      const response = await fetch(
-        `https://tempu-mail.vercel.app/api/generate `
-      );
+    if (regenrate) {
+      localStorage.removeItem("email");
+    }
 
-      //  http://localhost:3000/api/generate/
-      const result = await response.json();
-      setMail(result.data);
-    } catch (error) {
-      console.error("Error while fetching mail", error);
-    } finally {
-      setLoading(false);
+    const emailExists = localStorage.getItem("email");
+
+    if (emailExists) {
+      setMail(emailExists);
+    } else {
+
+      try {
+        setLoading(true);
+
+        const response = await fetch(
+          `https://tempu-mail.vercel.app/api/generate `
+        );
+
+        //  http://localhost:3000/api/generate/
+        const result = await response.json();
+        setMail(result.data);
+        localStorage.setItem("email", result.data)
+      } catch (error) {
+        console.error("Error while fetching mail", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -44,7 +57,8 @@ const EmailGenerator = () => {
           <input
             ref={inputRef}
             type="text"
-            value={mail}
+            value={loading ? "Generating..." : mail}
+            disabled={true}
             readOnly
             className="flex-1 bg-transparent text-cyan-400 font-mono text-lg p-3 border border-gray-700 rounded-lg focus:outline-none"
             onFocus={(e) => e.target.select()}
@@ -59,12 +73,11 @@ const EmailGenerator = () => {
         {/* Generate Button */}
         <div className="text-center">
           <button
-            onClick={fetchMailDetails}
+            onClick={() => fetchMailDetails(true)}
             disabled={loading}
             className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
           >
             {loading ? "Generating..." : "Generate Email"}
-            {/* {loading ? "Generating..." : "Generate Email"} */}
           </button>
         </div>
         {/* Description */}
@@ -87,5 +100,3 @@ const EmailGenerator = () => {
     </div>
   );
 };
-
-export default EmailGenerator;

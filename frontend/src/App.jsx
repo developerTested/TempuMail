@@ -1,18 +1,17 @@
 import { useState } from "react";
 import Header from "./components/Header";
-import EmailGenerator from "./components/emailGenerator";
-import "./index.css";
 import Inbox from "./components/Inbox";
+import EmailGenerator from "./components/EmailGenerator";
 
+import "./index.css";
 function App() {
-  const [email, setEmail] = useState("");
 
   return (
     <>
       <Header />
 
-      <EmailGenerator setMail={setEmail} />
-      <Inbox email={email} />
+      <EmailGenerator />
+      <Inbox />
     </>
   );
 }

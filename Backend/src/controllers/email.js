@@ -56,7 +56,9 @@ const hanleIncoming = async (req, res) => {
     };
     //  redis existing email
 
-    const emailExists = await redis.get(recipient);
+    const emailExists = await redis.json.get(recipient);
+
+    console.log(" this is a incoming :", emailExists);
 
     if (!emailExists) {
       return res.status(404).json({ message: "Email not found" });

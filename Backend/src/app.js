@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import emailRouter from "./routes/emailr.js";
+import cors from "cors";
 import redis from "./db/Redis.js";
 
 async function testRadis() {
@@ -16,6 +17,7 @@ async function testRadis() {
 }
 
 const app = express();
+app.use(cors());
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ limit: "16kb", extended: true }));
 const port = process.env.PORT || 3001;

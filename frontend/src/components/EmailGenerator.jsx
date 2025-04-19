@@ -6,7 +6,6 @@ export default function EmailGenerator() {
   const inputRef = useRef(null);
 
   const fetchMailDetails = async (regenrate = false) => {
-
     if (regenrate) {
       localStorage.removeItem("email");
     }
@@ -16,7 +15,6 @@ export default function EmailGenerator() {
     if (emailExists) {
       setMail(emailExists);
     } else {
-
       try {
         setLoading(true);
 
@@ -27,7 +25,7 @@ export default function EmailGenerator() {
         //  http://localhost:3000/api/generate/
         const result = await response.json();
         setMail(result.data);
-        localStorage.setItem("email", result.data)
+        localStorage.setItem("email", result.data);
       } catch (error) {
         console.error("Error while fetching mail", error);
       } finally {
@@ -99,4 +97,4 @@ export default function EmailGenerator() {
       </div>
     </div>
   );
-};
+}

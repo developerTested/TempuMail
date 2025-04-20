@@ -5,6 +5,7 @@ import {
   hanleIncoming,
   checkInbox,
   showAllMails,
+  costomMail,
 } from "../controllers/email.js";
 
 const router = express.Router();
@@ -12,6 +13,10 @@ const router = express.Router();
 //  generate email
 
 router.get("/generate", generateEmail);
+
+// costom maail
+
+router.post("/custom", costomMail);
 
 // handle incoming
 

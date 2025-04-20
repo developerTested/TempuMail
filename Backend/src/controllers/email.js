@@ -28,6 +28,28 @@ const generateEmail = async (req, res) => {
   }
 };
 
+//  constom mail
+
+const costomMail = async (req, res) => {
+  try {
+    const domains = process.env.MAILGUN_DOMAIN;
+    const { username } = req.body;
+    const email = `${username}@${domains}`;
+
+    // store in email in redis
+    if (!(await redis.exists(email))) {
+      await redis.json.set(email, "$", [], "EX", 60);
+    }
+
+    return res
+      .status(201)
+      .json({ message: "email generated and save in redis ", email });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "error while generate email" });
+  }
+};
+
 //  handle incoming mail
 
 const hanleIncoming = async (req, res) => {
@@ -110,7 +132,7 @@ const showAllMails = async (req, res) => {
     res.status(500).json({ error: "Server error!" });
   }
 };
-export { generateEmail, hanleIncoming, checkInbox, showAllMails };
+export { generateEmail, hanleIncoming, checkInbox, showAllMails, costomMail };
 
 // import redis from "../db/Redis.js";
 // import dotenv from "dotenv";

@@ -1,73 +1,69 @@
-// import Redis from "ioredis";
 import redis from "../db/Redis.js";
-import mailgun, { verifyWebhook } from "../mailgun.js";
+import { ApiError } from "../ApiError.js"
+import { ApiResponse } from "../ApiResponse.js"
 
-// generate email
+/**
+ * Get Domain
+ */
+const domains = process.env.MAILGUN_DOMAIN;
 
-const generateEmail = async (req, res) => {
+export const generateEmail = async (req, res) => {
   try {
-    // create emailkey
-    const domains = process.env.MAILGUN_DOMAIN;
     const username = Math.random().toString(36).substring(2, 10);
     const email = `${username}@${process.env.MAILGUN_DOMAIN}`;
 
-    console.log(domains);
-    console.log(email);
-
-    // store email in redis
-    if (!(await redis.exists(email))) {
-      await redis.json.set(email, "$", [], "EX", 60);
+    /**
+     * Check Email exists or not
+     */
+    if (!await redis.exists(email)) {
+      await redis.json.set(email, "$", []);
+      await redis.expire(email, 10 * 60)
     }
 
     return res
       .status(201)
-      .json({ message: "email generated and save in redis", email });
+      .json(new ApiResponse(email, "Email generated and save into redis"));
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "error while generate email" });
+    return res.status(500).json(new ApiError(500, "An Error occurred while generating an email"));
   }
 };
 
-//  constom mail
-
-const costomMail = async (req, res) => {
+export const customMail = async (req, res) => {
   try {
-    const domains = process.env.MAILGUN_DOMAIN;
     const { username } = req.body;
     const email = `${username}@${domains}`;
 
-    // store in email in redis
-    if (!(await redis.exists(email))) {
-      await redis.json.set(email, "$", [], "EX", 60);
+    /**
+    * Check Email exists or not
+    */
+    if (!await redis.exists(email)) {
+      await redis.json.set(email, "$", []);
+      await redis.expire(email, 10 * 60)
     }
 
     return res
       .status(201)
-      .json({ message: "email generated and save in redis ", email });
+      .json(new ApiResponse({ email }, "Your custom email has been generated successfully!"))
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "error while generate email" });
+    return res.status(500).json(new ApiError(500, "An Error occurred while generating custom email address"));
   }
 };
 
-//  handle incoming mail
-
-const hanleIncoming = async (req, res) => {
+/**
+ * Malingun Handler
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+export const handleIncoming = async (req, res) => {
   try {
-    //  validate maligun hook
+    const { recipient, sender, subject, "body-plain": body, "body-html": bodyHtml, Date: mailDate } = req.body;
 
-    // if (!verifyWebhook(req.body)) {
-    //   return res.status(401).json({ error: "Invalid signature" });
-    // }
-
-    const {
-      recipient,
-      sender,
-      subject,
-      "body-plain": body,
-      "body-html": bodyHtml,
-      Date: mailDate,
-    } = req.body;
+    if ([recipient, sender, body, bodyHtml].some((field) => field?.trim() === "")) {
+      return res.status(400).json(new ApiError(400, "Bad Request"));
+    }
 
     const mailData = {
       sender,
@@ -76,159 +72,80 @@ const hanleIncoming = async (req, res) => {
       html: bodyHtml,
       date: mailDate || new Date().toISOString(),
     };
-    //  redis existing email
 
     const emailExists = await redis.json.get(recipient);
 
-    console.log(" this is a incoming :", emailExists);
-
     if (!emailExists) {
-      return res.status(404).json({ message: "Email not found" });
+      return res.status(404).json(new ApiError(404, "Email does not Exists!"))
     }
-    //
 
-    await redis.json.arrappend(
-      recipient,
-      "$",
-      JSON.parse(JSON.stringify(mailData))
-    );
+    await redis.json.arrappend(recipient, "$", JSON.parse(JSON.stringify(mailData)));
 
-    res.status(200).json({ message: "Email stored successfully", mailData });
+    return res.status(200).json(new ApiResponse(mailData, "Email stored successfully"));
   } catch (error) {
     console.error("Error while handing email :", error);
-    res.status(500).json({ error: "mail not processing " });
+    return res.status(500).json(new ApiError(500, "mail not processing "));
   }
 };
 
-//  check inbox
-
-const checkInbox = async (req, res) => {
+/**
+ * Get all emails
+ * @param {*} req 
+ * @param {*} res 
+ * @returns
+ */
+export const checkInbox = async (req, res) => {
   const { email } = req.params;
   try {
     const inbox = await redis.json.get(email);
 
     if (!inbox) {
-      return res.status(404).json({ message: "Inbox not found" });
+      return res.status(404).json(new ApiError(404, "Inbox not found!"))
     }
-    return res.status(200).json(inbox ? inbox : []);
+    return res.status(200).json(new ApiResponse(inbox || [], "Inbox Fetched"));
   } catch (error) {
     console.error("Error fetching inbox:", error);
-    res.status(500).json({ error: "Server error!" });
+    return res.status(500).json(new ApiError(500, "An Error occurred while fetching Inbox"));
   }
 };
 
-//  show all email
+/**
+ * This function has bug
+ * @returns 
+ */
+export const showAllMails = async (req, res) => {
 
-const showAllMails = async (req, res) => {
+  const emails = await redis.keys(`*${domains}`);
+
+  if (!emails) {
+    return res.json(new ApiResponse([], "No Emails"));
+  }
+
+  const total = emails.length || 0;
+
+  return res.json(new ApiResponse({ total, emails }, "All Emails Fetched!"));
+};
+
+/**
+ * Delete all mails stored in redis.
+ */
+export const deleteAllMails = async (req, res) => {
   try {
-    const keys = await redis.keys("*");
-    for (const key of keys) {
-      const data = await redis.json.get(key);
-      emails.push(data);
+
+    const mailIds = await redis.keys(`*${domains}`);
+
+    if (Array.isArray(mailIds)) {
+
+      mailIds.map(async (mail) => {
+        await redis.expire(mail, 5)
+      })
+
+      return res.json(new ApiResponse(null, "All Mails has been deleted!"))
     }
-    return res.json(emails || []);
+
+    return res.json(new ApiResponse(null, "No Mails were deleted!"))
+
   } catch (error) {
-    console.error("Error show all emails:", error);
-    res.status(500).json({ error: "Server error!" });
+    return res.status(500).json(new ApiError(500, "Unable to delete all mails", error.message))
   }
-};
-export { generateEmail, hanleIncoming, checkInbox, showAllMails, costomMail };
-
-// import redis from "../db/Redis.js";
-// import dotenv from "dotenv";
-
-// dotenv.config();
-
-// // generate email
-// // export const generateEmail = async (req, res) => {
-// try {
-//   const domains = process.env.MAILGUN_DOMAIN;
-//   const username = Math.random().toString(36).substring(2, 10);
-//   const email = `${username}@${domains}`;
-
-// store email in redis
-//   if (!(await redis.exists(email))) {
-//     await redis.json.set(email, "$", [], "EX", 60);
-//   }
-
-//   return res
-//     .status(201)
-//     .json({ data: email, message: "Email generated and saved in redis" });
-// } catch (error) {
-//   console.error(error);
-//   return res.status(500).json({ error: "Error while generating email" });
-// }
-// // };
-
-// // handle incoming mail
-// export const handleIncoming = async (req, res) => {
-//   try {
-//     const {
-//       recipient,
-//       sender,
-//       subject,
-//       "body-plain": body,
-//       "body-html": bodyHtml,
-//       Date: mailDate,
-//     } = req.body;
-
-//     const mailData = {
-//       sender,
-//       subject,
-//       body,
-//       html: bodyHtml,
-//       date: mailDate || new Date().toISOString(),
-//     };
-
-//     const emailExists = await redis.json.get(recipient);
-
-//     if (!emailExists) {
-//       return res.status(404).json({ error: "Email not found!" });
-//     }
-
-//     await redis.json.arrappend(recipient, "$", mailData);
-
-//     return res.status(200).json({
-//       data: mailData,
-//       message: "Email stored successfully!",
-//     });
-//   } catch (error) {
-//     console.error("Error while handling email:", error);
-//     return res.status(500).json({ error: "Failed to process email" });
-//   }
-// };
-
-// // check inbox
-// export const checkInbox = async (req, res) => {
-//   try {
-//     const { email } = req.params;
-//     const inbox = await redis.json.get(email);
-
-//     if (!inbox) {
-//       return res.json({ data: [], message: "No emails found" });
-//     }
-
-//     return res.json({ data: inbox, message: "Inbox fetched" });
-//   } catch (error) {
-//     console.error("Error fetching inbox:", error);
-//     return res.status(500).json({ error: "Server error" });
-//   }
-// };
-
-// // show all emails (debugging)
-// export const showAllMails = async (req, res) => {
-//   try {
-//     const keys = await redis.keys("*");
-//     const emails = [];
-
-//     for (const key of keys) {
-//       const data = await redis.json.get(key);
-//       emails.push(data);
-//     }
-
-//     return res.json({ data: emails, message: "All emails retrieved" });
-//   } catch (error) {
-//     console.error("Error fetching all emails:", error);
-//     return res.status(500).json({ error: "Server error" });
-//   }
-// };
+}

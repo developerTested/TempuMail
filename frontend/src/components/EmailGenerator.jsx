@@ -1,29 +1,30 @@
 import React, { useEffect, useState, useRef } from "react";
 
 export default function EmailGenerator() {
-  const [mail, setMail] = useState("");
+  const [mail, setMail] = useState(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
-  const [costomMail, setCostomMail] = useState("");
+  const customInputRef = useRef(null);
+  const [customMail, setCustomMail] = useState("");
+  const [showNotification, setShowNotification] = useState(false);
 
-  const fetchMailDetails = async (regenrate = false) => {
-    if (regenrate) {
+  const fetchMailDetails = async (regenerate = false) => {
+    if (regenerate) {
       localStorage.removeItem("email");
     }
 
     const emailExists = localStorage.getItem("email");
+
+    console.log("Found", emailExists);
 
     if (emailExists) {
       setMail(emailExists);
     } else {
       try {
         setLoading(true);
-
         const response = await fetch(
-          `https://tempu-mail.vercel.app/api/generate `
+          `https://tempu-mail.vercel.app/api/generate`
         );
-
-        //  http://localhost:3000/api/generate/
         const result = await response.json();
         setMail(result.data);
         localStorage.setItem("email", result.data);
@@ -39,123 +40,175 @@ export default function EmailGenerator() {
     fetchMailDetails();
   }, []);
 
-  const copyClicBoard = () => {
-    if (inputRef.current) {
-      inputRef.current.select();
+  const copyToClipboard = (text, ref) => {
+    navigator.clipboard.writeText(text);
+    if (ref.current) {
+      ref.current.focus();
+      ref.current.select();
     }
-    onclick = () => {
-      navigator.clipboard.writeText(mail);
-    };
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 2000);
   };
 
-  //  costom Mail
-
-  const fetchCostomMailDetails = async (regenrate = false) => {
-    if (regenrate) {
-      localStorage.removeItem("costomMail");
+  // Custom Mail
+  const generateCustomMail = async () => {
+    if (!customMail) {
+      return;
     }
-    const emailExists = localStorage.getItem("costomMail");
 
-    if (emailExists) {
-      setCostomMail(emailExists);
-    } else {
-      try {
-        setLoading(true);
-        const response = await fetch(`http://localhost:3000/api/custom`);
-        const result = await response.json();
-        setCostomMail(result.email);
-        localStorage.setItem("email", result.email);
-      } catch (error) {
-        console.error("Errir while creating mail", error);
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://tempu-mail.vercel.app/api/custom`,
+        {
+          method: "post",
+          body: JSON.stringify({ username: customMail }),
+          headers: {
+            "content-type": "application/json",
+            "accept": "application/json"
+          }
+        },
+      );
+
+      if (!response.ok) {
+        console.error("An Error", await response.json())
+        return false;
       }
+
+      const result = await response.json();
+
+      localStorage.setItem("email", result.data)
+
+      setMail(result.data)
+
+    } catch (error) {
+      console.error("Error while fetching mail", error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchCostomMailDetails();
-  }, []);
 
   return (
-    <div className="w-full bg-[#111827] text-gray-100 py-16 flex justify-center">
-      <div className="bg-[#1f2937] rounded-xl p-8 shadow-xl border border-gray-800 max-w-2xl w-full space-y-6">
-        {/* Input  */}
-        <h1 className="text-gray-50 text-xl">Generate Random Mail</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <input
-            ref={inputRef}
-            type="text"
-            value={loading ? "Generating..." : mail}
-            disabled={false}
-            readOnly
-            className="flex-1 bg-transparent text-cyan-400 font-mono text-lg p-3 border border-gray-700 rounded-lg focus:outline-none"
-            onFocus={(e) => e.target.select()}
-          />
-          <button
-            className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-900 transition"
-            onClick={copyClicBoard}
-          >
-            Copy
-          </button>
-        </div>
-        {/* Generate Button */}
-        <div className="text-center">
-          <button
-            onClick={() => fetchMailDetails(true)}
-            disabled={loading}
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-          >
-            {loading ? "Generating..." : "Generate Email"}
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 py-16 flex justify-center items-center px-4">
+      <div className="bg-gray-800/90 backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-gray-700 max-w-4xl w-full space-y-8 relative">
+        {/* Notification */}
+        {showNotification && (
+          <div className="animate-fade-in-down absolute top-4 right-4 bg-emerald-600/90 text-white px-4 py-2 rounded-lg text-sm shadow-md">
+            Copied to clipboard!
+          </div>
+        )}
 
-        {/* Custom Email Section */}
-        <div className="space-y-6 mt-10">
-          <h1 className="text-gray-50 text-xl">Generate Custom Mail</h1>
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <input
-              className="flex-1 bg-transparent text-cyan-400 font-mono text-lg p-3 border border-gray-700 rounded-lg focus:outline-none"
-              type="text"
-              value={costomMail}
-              onChange={(e) => setCostomMail(e.target.value)}
-              onFocus={(e) => e.target.select()}
-            />
-            <button
-              className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-900 transition"
-              onClick={() => copyToClipboard(costomMail)}
-            >
-              Copy
-            </button>
+        <h1 className="text-4xl font-bold text-center text-blue-400">
+          <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+            Secure Mail Generator
+          </span>
+        </h1>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Random Email Section */}
+          <div className="space-y-6 p-6 bg-gray-900/50 rounded-xl border border-gray-700">
+            <h2 className="text-xl font-semibold text-blue-300">
+              Random Email
+            </h2>
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  type="email"
+                  value={loading ? "Generating..." : mail}
+                  readOnly
+                  className="w-full bg-gray-800 text-blue-100 font-mono text-lg p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
+                  onFocus={(e) => e.target.select()}
+                />
+                <button
+                  onClick={() => copyToClipboard(mail, inputRef)}
+                  className="absolute right-2 top-2 bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-md transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5 text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <button
+                onClick={() => fetchMailDetails(true)}
+                disabled={loading}
+                className="bg-gradient-to-r from-blue-800 via-blue-500 to-indigo-500 bg-[length:300%_300%] animate-gradient-x text-white font-medium px-6 py-3 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Generating...
+                  </>
+                ) : (
+                  "Generate New Email"
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="text-center">
-            <button
-              onClick={() => fetchCostomMailDetails()} // Implement this
-              disabled={loading}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-            >
-              {loading ? "Generating..." : "Generate Custom Email"}
-            </button>
+          {/* Custom Email Section */}
+          <div className="space-y-6 p-6 bg-gray-900/50 rounded-xl border border-gray-700">
+            <h2 className="text-xl font-semibold text-blue-300">
+              Custom Email
+            </h2>
+            <div className="flex flex-col gap-4">
+              <div className="relative size-full flex items-center rounded-lg border border-gray-600 bg-gray-800 text-blue-100">
+                <input
+                  ref={customInputRef}
+                  type="text"
+                  value={loading ? "Generating..." : customMail}
+                  onChange={(e) => setCustomMail(e.target.value)}
+                  className="w-full font-mono bg-transparent text-lg p-3 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
+                  placeholder="your name"
+                />
+                <div className="span p-3 cursor-not-allowed">
+                  @tempmail.sbs
+                </div>
+              </div>
+              <button
+                onClick={generateCustomMail}
+                className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-[length:300%_300%] animate-gradient-x text-white font-medium px-6 py-3 rounded-lg transition-all"
+              >
+                Create Custom Email
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Description */}
-        {/* <p className="text-gray-400 text-center text-sm leading-relaxed">
-          Forget about spam, advertising mailings, hacking and attacking robots.
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-3 gap-4 text-center mt-8">
+          <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+            <h3 className="text-blue-400 font-medium">Secure</h3>
+            <p className="text-sm text-gray-400 mt-1">End-to-end encryption</p>
+          </div>
+          <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+            <h3 className="text-blue-400 font-medium">Anonymous</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              No personal data collected
+            </p>
+          </div>
+          <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+            <h3 className="text-blue-400 font-medium">Temporary</h3>
+            <p className="text-sm text-gray-400 mt-1">Auto-deletes in 24h</p>
+          </div>
+        </div>
+
+        {/* Footer Text */}
+        <p className="text-center text-sm text-gray-400 mt-8 leading-relaxed">
+          Protect your online privacy with temporary, secure email addresses.
           <br />
-          Temp Mail provides temporary, secure, anonymous, free, disposable
-          email address.
-        </p> */}
-        {/* Copy / Refresh Buttons aligned right */}
-        <div className="flex justify-end gap-4 pt-4">
-          <button className="bg-[#1f2937] border border-gray-600 hover:bg-[#374151] px-6 py-2 rounded text-sm">
-            📄 Copy
-          </button>
-          <button className="bg-[#1f2937] border border-gray-600 hover:bg-[#374151] px-6 py-2 rounded text-sm">
-            🔄 Refresh
-          </button>
-        </div>
+          No registration required • Completely anonymous • Free forever
+        </p>
       </div>
     </div>
   );

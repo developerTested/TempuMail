@@ -1,29 +1,53 @@
+import express from "express";
 import dotenv from "dotenv";
+import cors from "cors"
+import { ApiError } from "./ApiError.js";
+import { emailRouter } from "./routes/email.router.js";
+
 dotenv.config();
 
-import express from "express";
-import emailRouter from "./routes/emailr.js";
-import cors from "cors";
-import redis from "./db/Redis.js";
+export const port = process.env.PORT || 3001;
 
-async function testRadis() {
-  try {
-    await redis.set("testkey", "Hello from unstap radis ", { ex: 120 });
-    const value = await redis.get("testkey");
-    console.log("Radis value :", value);
-  } catch (error) {
-    console.error("Upstash Test Failed:", error);
-  }
-}
-
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "16kb" }));
+export const app = express();
+app.use(express.json({ limit: "16kb" }))
 app.use(express.urlencoded({ limit: "16kb", extended: true }));
-const port = process.env.PORT || 3001;
+
+/**
+ * Cors
+ */
+app.use(cors({
+  origin: process.env.ORIGIN_HOSTS || "*",
+  methods: ["GET", "POST"]
+}))
+
+
+app.get("/", function (req, res) {
+  return res.json({
+    success: true,
+    message: "Hello World!"
+  })
+})
+
 app.use("/api", emailRouter);
 
-app.listen(port, () => console.log(`server running port ${port}`));
-testRadis();
 
-//
+
+/**
+ * Error Handing
+ */
+app.use((err, _, res, _next) => {
+  console.log("An error", err);
+
+  if (err?.statusCode) {
+    return res.status(err.statusCode || 500).json(err);
+  }
+
+  return res.status(err.statusCode || 500).json(new ApiError(err.statusCode || 500, "An error occurred", err.message))
+})
+
+/**
+* 404 errors
+*/
+app.use("*", function (_, res) {
+  return res.status(404).json(new ApiError(404, "Page not found"))
+})

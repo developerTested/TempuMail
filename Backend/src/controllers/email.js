@@ -32,6 +32,11 @@ export const generateEmail = async (req, res) => {
 export const customMail = async (req, res) => {
   try {
     const { username } = req.body;
+
+    if (!username) {
+      return res.json(new ApiError(400, "Invalid Input"))
+    }
+
     const email = `${username}@${domains}`;
 
     /**

@@ -49,7 +49,7 @@ export const customMail = async (req, res) => {
 
     return res
       .status(201)
-      .json(new ApiResponse({ email }, "Your custom email has been generated successfully!"))
+      .json(new ApiResponse(email, "Your custom email has been generated successfully!"))
   } catch (error) {
     console.error(error);
     return res.status(500).json(new ApiError(500, "An Error occurred while generating custom email address"));

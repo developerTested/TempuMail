@@ -58,29 +58,25 @@ export default function EmailGenerator() {
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://tempu-mail.vercel.app/api/custom`,
-        {
-          method: "post",
-          body: JSON.stringify({ username: customMail }),
-          headers: {
-            "content-type": "application/json",
-            "accept": "application/json"
-          }
+      const response = await fetch(`https://tempu-mail.vercel.app/api/custom`, {
+        method: "post",
+        body: JSON.stringify({ username: customMail }),
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
         },
-      );
+      });
 
       if (!response.ok) {
-        console.error("An Error", await response.json())
+        console.error("An Error", await response.json());
         return false;
       }
 
       const result = await response.json();
 
-      localStorage.setItem("email", result.data)
+      localStorage.setItem("email", result.data);
 
-      setMail(result.data)
-
+      setMail(result.data);
     } catch (error) {
       console.error("Error while fetching mail", error);
     } finally {
@@ -171,9 +167,7 @@ export default function EmailGenerator() {
                   className="w-full font-mono bg-transparent text-lg p-3 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
                   placeholder="your name"
                 />
-                <div className="span p-3 cursor-not-allowed">
-                  @tempmail.sbs
-                </div>
+                <div className="span p-3 cursor-not-allowed">@tempmail.sbs</div>
               </div>
               <button
                 onClick={generateCustomMail}

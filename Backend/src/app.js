@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors"
+import cors from "cors";
 import { ApiError } from "./ApiError.js";
 import { emailRouter } from "./routes/email.router.js";
 
@@ -9,28 +9,27 @@ dotenv.config();
 export const port = process.env.PORT || 3001;
 
 export const app = express();
-app.use(express.json({ limit: "16kb" }))
+app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ limit: "16kb", extended: true }));
 
 /**
  * Cors
  */
-app.use(cors({
-  origin: process.env.ORIGIN_HOSTS || "*",
-  methods: ["GET", "POST"]
-}))
-
+app.use(
+  cors({
+    origin: process.env.ORIGIN_HOSTS || "*",
+    methods: ["GET", "POST"],
+  })
+);
 
 app.get("/", function (req, res) {
   return res.json({
     success: true,
-    message: "Hello World!"
-  })
-})
+    message: "Hello World!",
+  });
+});
 
 app.use("/api", emailRouter);
-
-
 
 /**
  * Error Handing
@@ -42,12 +41,14 @@ app.use((err, _, res, _next) => {
     return res.status(err.statusCode || 500).json(err);
   }
 
-  return res.status(err.statusCode || 500).json(new ApiError(err.statusCode || 500, "An error occurred", err.message))
-})
+  return res
+    .status(err.statusCode || 500)
+    .json(
+      new ApiError(err.statusCode || 500, "An error occurred", err.message)
+    );
+});
 
-/**
-* 404 errors
-*/
+
 app.use("*", function (_, res) {
-  return res.status(404).json(new ApiError(404, "Page not found"))
-})
+  return res.status(404).json(new ApiError(404, "Page not found"));
+});

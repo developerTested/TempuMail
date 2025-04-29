@@ -1,11 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
+// import { useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 export default function Inbox() {
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedEmail, setselectedEmail] = useState(null);
 
+  //  formate email
+
+  const formatEmailBody = (text) => {
+    // const linkRange = /(https?:\/\/[^\s]+)/g;
+    const linkRegex = /(https?:\/\/[^\s]+)/g;
+    const formattedText = text
+      .split("\n")
+      .map((line) => {
+        return line.replace(
+          linkRegex,
+          (url) =>
+            `<a href="${url}" target="_blank" style="color: blue; text-decoration: underline;">${url}</a>`
+        );
+      })
+      .join("<br/>"); // 2. New lines ko <br/> se replace kiya
+
+    // Sanitize
+
+    return DOMPurify.sanitize(formattedText);
+  };
   const fetchInbox = async () => {
     const email = localStorage.getItem("email");
 
@@ -37,22 +57,27 @@ export default function Inbox() {
   }, []);
 
   return (
-    <div className="flex justify-center items-start w-full min-h-screen  bg-gray-100 p-6">
+    <div className="flex justify-center items-start w-full min-h-screen bg-gray-100 p-6">
       <div className="w-full max-w-3xl bg-white rounded-md shadow-md h-[500px] overflow-y-auto">
         {selectedEmail ? (
           <div className="p-6">
+            {/* Back button styling thoda sa improve ✅ */}
             <button
               onClick={() => setselectedEmail(null)}
-              className="mb-4 text-blue-600 hover:underline flex items-center"
+              className="mb-4 text-blue-600 hover:underline font-medium"
             >
-              ← Back to Inbox
+              ← Inbox pe wapas jao
             </button>
 
             <h2 className="text-2xl font-bold mb-2">{selectedEmail.subject}</h2>
             <p className="text-gray-600 mb-4">From: {selectedEmail.sender}</p>
+
+            {/* Formatted email body yahan render hoga ✅ */}
             <div
-              className="prose prose-sm sm:prose lg:prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: formatEmailBody(selectedEmail.body),
+              }}
             />
           </div>
         ) : (

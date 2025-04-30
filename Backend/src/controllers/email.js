@@ -3,20 +3,19 @@ import { ApiError } from "../ApiError.js";
 import { ApiResponse } from "../ApiResponse.js";
 
 /**
- * Get Domain
+ *   Get Domain
  */
 const domains = process.env.MAILGUN_DOMAIN;
 
 export const generateEmail = async (req, res) => {
   try {
     const userIp = req.ip;
-    const userKey = `user: ${userIp}:email_count`;
+    const userKey = `user:${userIp}:email_count`;
     const emailLimit = 5;
     const emailCount = await redis.get(userKey);
 
-
-    if(emailCount && parseInt(emailCount) => emailLimit){
-      
+    if (emailCount && parseInt(emailCount) >= emailLimit) {
+      return res.status(429).json(new ApiError(429, "Email limit exceeded"));
     }
 
     const username = Math.random().toString(36).substring(2, 10);
@@ -29,6 +28,9 @@ export const generateEmail = async (req, res) => {
       await redis.json.set(email, "$", []);
       await redis.expire(email, 10 * 60);
     }
+
+    await redis.incr(userKey);
+    await redis.expire(userKey, 60 * 60);
 
     return res
       .status(201)
@@ -54,9 +56,10 @@ export const customMail = async (req, res) => {
     /**
      * Check Email exists or not
      */
+
     if (!(await redis.exists(email))) {
       await redis.json.set(email, "$", []);
-      await redis.expire(email, 10 * 60);
+      await redis.expire(email, 60 * 60);
     }
 
     return res

@@ -18,7 +18,7 @@ emailRouter.get("/generate", generateEmail);
 emailRouter.post("/custom", customMail);
 
 // Handle incoming
-// emailRouter.post("/mailgun", handleIncoming);
+emailRouter.post("/mailgun", handleIncoming);
 
 // Get Inbox
 emailRouter.get("/inbox/:email", checkInbox);

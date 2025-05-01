@@ -9,8 +9,8 @@ dotenv.config();
 export const port = process.env.PORT || 3001;
 
 export const app = express();
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ limit: "16kb", extended: true }));
+app.use(express.json({ limit: "50MB" }));
+app.use(express.urlencoded({ limit: "50MB", extended: true }));
 
 /**
  * Cors

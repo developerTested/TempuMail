@@ -4,28 +4,14 @@ import DOMPurify from "dompurify";
 export default function Inbox() {
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedEmail, setselectedEmail] = useState(null);
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   //  formate email
 
   const formatEmailBody = (text) => {
-    // const linkRange = /(https?:\/\/[^\s]+)/g;
-    const linkRegex = /(https?:\/\/[^\s]+)/g;
-    const formattedText = text
-      .split("\n")
-      .map((line) => {
-        return line.replace(
-          linkRegex,
-          (url) =>
-            `<a href="${url}" target="_blank" style="color: blue; text-decoration: underline;">${url}</a>`
-        );
-      })
-      .join("<br/>"); // 2. New lines ko <br/> se replace kiya
-
-    // Sanitize
-
-    return DOMPurify.sanitize(formattedText);
+    return DOMPurify.sanitize(text);
   };
+
   const fetchInbox = async () => {
     const email = localStorage.getItem("email");
 
@@ -63,20 +49,48 @@ export default function Inbox() {
           <div className="p-6">
             {/* Back button styling thoda sa improve ✅ */}
             <button
-              onClick={() => setselectedEmail(null)}
+              onClick={() => setSelectedEmail(null)}
               className="mb-4 text-blue-600 hover:underline font-medium"
             >
               ← Inbox pe wapas jao
             </button>
 
-            <h2 className="text-2xl font-bold mb-2">{selectedEmail.subject}</h2>
-            <p className="text-gray-600 mb-4">From: {selectedEmail.sender}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex gap-4">
+                <div className="size-14 rounded-full bg-slate-200">
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm font-semibold">
+                    {selectedEmail.from.split("<")[0]}
+                  </div>
+                  <div className="text-sm">
+                    {selectedEmail.from.split("<")[1]?.replace("<", "")?.replace(">", '')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="block">
+                <div className="text-lg">
+                  Date
+                </div>
+
+                <div className="text-sm">
+                  {selectedEmail.date?.split("+")[0]}
+                </div>
+              </div>
+            </div>
+            {selectedEmail.subject &&
+              <div className="block text-sm my-2 border p-2">
+                Subject: {selectedEmail.subject}
+              </div>
+            }
 
             {/* Formatted email body yahan render hoga ✅ */}
             <div
-              className="prose prose-sm max-w-none"
+              className="max-w-none block size-full relative overflow-hidden overflow-y-auto"
               dangerouslySetInnerHTML={{
-                __html: formatEmailBody(selectedEmail.body),
+                __html: formatEmailBody(selectedEmail.html),
               }}
             />
           </div>
@@ -103,13 +117,13 @@ export default function Inbox() {
                 </div>
 
                 <div className="divide-y">
-                  {inbox.map((email) => (
+                  {inbox.map((email, i) => (
                     <div
-                      key={email.id}
+                      key={i}
                       className="grid grid-cols-3 items-center px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
-                      onClick={() => setselectedEmail(email)}
+                      onClick={() => setSelectedEmail(email)}
                     >
-                      <div className="font-medium truncate">{email.sender}</div>
+                      <div className="font-medium truncate">{email.from ? email.from.split("<")[0] : "Unknown Sender"}</div>
                       <div className="text-sm text-gray-600 truncate">
                         {email.subject}
                       </div>

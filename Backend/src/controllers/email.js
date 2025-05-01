@@ -12,7 +12,7 @@ export const generateEmail = async (req, res) => {
     const userIp = req.ip;
     const userKey = `user:${userIp}:email_count`;
     const emailLimit = 5;
-    const emailCount = await redis.get(userKey);
+    const emailCount = await redis.get(userKey);    
 
     if (emailCount && parseInt(emailCount) >= emailLimit) {
       return res.status(429).json(new ApiError(429, "Email limit exceeded"));
@@ -30,7 +30,7 @@ export const generateEmail = async (req, res) => {
     }
 
     await redis.incr(userKey);
-    await redis.expire(userKey, 60 * 60);
+    await redis.expire(userKey, 10 * 60);
 
     return res
       .status(201)
@@ -94,6 +94,7 @@ export const handleIncoming = async (req, res) => {
     const {
       recipient,
       sender,
+      from,
       subject,
       "body-plain": body,
       "body-html": bodyHtml,
@@ -102,12 +103,13 @@ export const handleIncoming = async (req, res) => {
     } = req.body;
 
     if (
-      [recipient, sender, body, bodyHtml].some((field) => field?.trim() === "")
+      [from, recipient, sender, body, bodyHtml].some((field) => field?.trim() === "")
     ) {
       return res.status(400).json(new ApiError(400, "Bad Request"));
     }
 
     const mailData = {
+      from,
       sender,
       subject,
       body,
@@ -183,10 +185,19 @@ export const deleteAllMails = async (req, res) => {
   try {
     const mailIds = await redis.keys(`*${domains}`);
 
+
+    const userIp = req.ip;
+    const userKey = `user:${userIp}:email_count`;
+
+    const emailCount = await redis.get(userKey);
+
+    await redis.expire(userKey, 5);
+
     if (Array.isArray(mailIds)) {
       mailIds.map(async (mail) => {
         await redis.expire(mail, 5);
       });
+
 
       return res.json(new ApiResponse(null, "All Mails has been deleted!"));
     }

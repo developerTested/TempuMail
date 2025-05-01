@@ -1,13 +1,11 @@
-// import { useState } from "react";
 import Header from "./components/Header";
 import Inbox from "./components/Inbox";
 import EmailGenerator from "./components/emailGenerator";
-// import EmailDetails from "./components/EmailDetails";
 import HowItWorks from "./components/HowItsWork";
 import { Routes, Route } from "react-router-dom";
 import AboutUs from "./components/AboutUs";
-import "./index.css";
-function App() {
+
+export default function App() {
   return (
     <>
       <Header />
@@ -30,5 +28,3 @@ function App() {
     </>
   );
 }
-
-export default App;

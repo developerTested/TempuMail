@@ -38,7 +38,7 @@ export default function Inbox() {
 
   useEffect(() => {
     fetchInbox();
-    const interval = setInterval(fetchInbox, 10000);
+    const interval = setInterval(fetchInbox, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -47,46 +47,44 @@ export default function Inbox() {
       <div className="w-full max-w-3xl bg-white rounded-md shadow-md h-[500px] overflow-y-auto">
         {selectedEmail ? (
           <div className="p-6">
-            {/* Back button styling thoda sa improve ✅ */}
             <button
               onClick={() => setSelectedEmail(null)}
               className="mb-4 text-blue-600 hover:underline font-medium"
             >
-              ← Inbox pe wapas jao
+              ← Back to Inbox
             </button>
 
             <div className="flex items-center justify-between">
               <div className="flex gap-4">
-                <div className="size-14 rounded-full bg-slate-200">
-                </div>
+                <div className="size-14 rounded-full bg-slate-200"></div>
 
                 <div className="flex flex-col gap-2">
                   <div className="text-sm font-semibold">
                     {selectedEmail.from.split("<")[0]}
                   </div>
                   <div className="text-sm">
-                    {selectedEmail.from.split("<")[1]?.replace("<", "")?.replace(">", '')}
+                    {selectedEmail.from
+                      .split("<")[1]
+                      ?.replace("<", "")
+                      ?.replace(">", "")}
                   </div>
                 </div>
               </div>
 
               <div className="block">
-                <div className="text-lg">
-                  Date
-                </div>
+                <div className="text-lg">Date</div>
 
                 <div className="text-sm">
                   {selectedEmail.date?.split("+")[0]}
                 </div>
               </div>
             </div>
-            {selectedEmail.subject &&
+            {selectedEmail.subject && (
               <div className="block text-sm my-2 border p-2">
                 Subject: {selectedEmail.subject}
               </div>
-            }
+            )}
 
-            {/* Formatted email body yahan render hoga ✅ */}
             <div
               className="max-w-none block size-full relative overflow-hidden overflow-y-auto"
               dangerouslySetInnerHTML={{
@@ -100,22 +98,35 @@ export default function Inbox() {
               Inbox ({inbox.length})
             </div>
 
+            <div className="bg-gray-200 px-4 py-2 font-semibold grid grid-cols-3 text-sm border-b border-gray-300">
+              <span>SENDER</span>
+              <span>SUBJECT</span>
+              <span className="text-center">VIEW</span>
+            </div>
             {loading ? (
-              <div className="p-6 text-center text-gray-500">
-                Loading emails...
+              <div className="p-4 space-y-4 animate-pulse duration-700">
+                {" "}
+                {/* Skeleton Start */}
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-3 items-center px-4 py-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                    <div className="h-6 bg-gray-200 rounded w-12 mx-auto"></div>
+                  </div>
+                ))}
               </div>
             ) : inbox.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                No emails found
+                Waiting for incoming emails...
               </div>
             ) : (
               <>
-                <div className="bg-gray-200 px-4 py-2 font-semibold grid grid-cols-3 text-sm border-b border-gray-300">
-                  <span>SENDER</span>
-                  <span>SUBJECT</span>
-                  <span className="text-center">VIEW</span>
-                </div>
-
                 <div className="divide-y">
                   {inbox.map((email, i) => (
                     <div
@@ -123,7 +134,11 @@ export default function Inbox() {
                       className="grid grid-cols-3 items-center px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
                       onClick={() => setSelectedEmail(email)}
                     >
-                      <div className="font-medium truncate">{email.from ? email.from.split("<")[0] : "Unknown Sender"}</div>
+                      <div className="font-medium truncate">
+                        {email.from
+                          ? email.from.split("<")[0]
+                          : "Unknown Sender"}
+                      </div>
                       <div className="text-sm text-gray-600 truncate">
                         {email.subject}
                       </div>

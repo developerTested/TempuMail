@@ -1,6 +1,4 @@
-import axios from "axios";
 import React, { useEffect, useState, useRef } from "react";
-import { API } from "../utils/api";
 
 export default function EmailGenerator() {
   const [mail, setMail] = useState(null);
@@ -17,28 +15,21 @@ export default function EmailGenerator() {
 
     const emailExists = localStorage.getItem("email");
 
+    console.log("Found", emailExists);
+
     if (emailExists) {
       setMail(emailExists);
     } else {
       try {
-
         setLoading(true);
-        const { data: response } = await API.get(`/generate`);
-
-        setMail(response.data);
-        localStorage.setItem("email", response.data);
-
+        const response = await fetch(
+          `https://tempu-mail.vercel.app/api/generate`
+        );
+        const result = await response.json();
+        setMail(result.data);
+        localStorage.setItem("email", result.data);
       } catch (error) {
-
-        const errorResponse = error?.response?.data;
-
-        if (errorResponse) {
-          console.error("Error while fetching mail", errorResponse);
-        } else {
-          console.error("Error while fetching mail", error);
-        }      
-
-        localStorage.setItem("email", mail);
+        console.error("Error while fetching mail", error);
       } finally {
         setLoading(false);
       }

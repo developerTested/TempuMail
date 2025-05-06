@@ -112,8 +112,8 @@ export default function EmailGenerator() {
                 <input
                   ref={inputRef}
                   type="email"
-                  defaultValue={loading ? "Generating..." : mail}
-                  // value={loading ? "Generating..." : mail}
+                  // defaultValue={loading ? "Generating..." : mail}
+                  value={loading ? "Generating..." : mail}
                   readOnly
                   className="w-full bg-gray-800 text-blue-100 font-mono text-lg p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
                   onFocus={(e) => e.target.select()}

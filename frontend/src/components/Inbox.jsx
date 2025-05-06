@@ -24,12 +24,12 @@ export default function Inbox() {
 
     try {
       setLoading(true);
-      const { data } = await API.get(`/inbox/${email}`);
-      if (data) {
-        setInbox(data);
-      }
 
-      console.log(data);
+      const { data: response } = await API.get(`/inbox/${email}`);
+      if (response) {
+        setInbox(response.data);
+      }
+      console.log(response.data);
     } catch (error) {
       console.error("Error while fetching inbox mail", error);
     } finally {

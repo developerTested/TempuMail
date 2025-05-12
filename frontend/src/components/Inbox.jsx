@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { API } from "../utils/api";
+
 // import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 export default function Inbox() {
@@ -15,20 +17,19 @@ export default function Inbox() {
   const fetchInbox = async () => {
     const email = localStorage.getItem("email");
 
-    if (!email?.length) {
+    if (!email) {
+      console.error("No email found in localStorage.");
       return;
     }
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://tempu-mail.vercel.app/api/inbox/${email}`
-      );
-      const result = await response.json();
 
-      if (result.data) {
-        setInbox(result.data);
+      const { data: response } = await API.get(`/inbox/${email}`);
+      if (response) {
+        setInbox(response.data);
       }
+      console.log(response.data);
     } catch (error) {
       console.error("Error while fetching inbox mail", error);
     } finally {

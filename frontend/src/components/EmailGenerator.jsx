@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 
+import { API } from "../utils/api.js";
+
 export default function EmailGenerator() {
   const [mail, setMail] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -22,12 +24,12 @@ export default function EmailGenerator() {
     } else {
       try {
         setLoading(true);
-        const response = await fetch(
-          `https://tempu-mail.vercel.app/api/generate`
-        );
-        const result = await response.json();
-        setMail(result.data);
-        localStorage.setItem("email", result.data);
+        const { data: response } = await API.get(`/generate`);
+        setMail(response.data);
+
+        console.log("response from data ", response.data);
+
+        localStorage.setItem("email", response.data);
       } catch (error) {
         console.error("Error while fetching mail", error);
       } finally {
@@ -58,8 +60,7 @@ export default function EmailGenerator() {
 
     try {
       setLoading(true);
-      const response = await fetch(`https://tempu-mail.vercel.app/api/custom`, {
-        method: "post",
+      const response = await API.post(`/custom`, {
         body: JSON.stringify({ username: customMail }),
         headers: {
           "content-type": "application/json",
@@ -111,6 +112,7 @@ export default function EmailGenerator() {
                 <input
                   ref={inputRef}
                   type="email"
+                  // defaultValue={loading ? "Generating..." : mail}
                   value={loading ? "Generating..." : mail}
                   readOnly
                   className="w-full bg-gray-800 text-blue-100 font-mono text-lg p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
